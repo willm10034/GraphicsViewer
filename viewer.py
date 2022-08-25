@@ -1,9 +1,13 @@
 import sys
 import os
+import platform
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSlot, Qt, QProcess
 from PyQt5.QtWidgets import QPushButton, QLabel, QFileDialog, QProgressDialog
 from PyQt5.QtGui import QPixmap
+
+# full path to image editor
+application = '/Applications/GIMP-2.10.app'
 
 
 class FlowLayout(QtWidgets.QLayout):
@@ -109,25 +113,17 @@ class FlowLayout(QtWidgets.QLayout):
         else:
             return parent.spacing()
 
-class Bubble(QtWidgets.QLabel):
-    def __init__(self, text):
-        super(Bubble, self).__init__(text)
-        self.word = text
-        self.setContentsMargins(5, 5, 5, 5)
-
-    def paintEvent(self, event):
-        painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-        painter.drawRoundedRect(
-            0, 0, self.width() - 1, self.height() - 1, 5, 5)
-        super(Bubble, self).paintEvent(event)
 
 class ImageButton(QtWidgets.QLabel):
     def __init__(self, name, location):
         super().__init__()
         self.name = name
         self.location = location
-        pixmap = QPixmap(location + '/' + name)
+        if platform.system() == 'Windows':
+            slash = '\\'
+        else:
+            slash = '/'
+        pixmap = QPixmap(location + slash + name)
         smaller_pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.FastTransformation)
         self.setPixmap(smaller_pixmap)
         self.setScaledContents(True)
@@ -136,7 +132,11 @@ class ImageButton(QtWidgets.QLabel):
         self.enlarge = False
 
     def mousePressEvent(self, event):
-        pixmap = QPixmap(self.location + '/' + self.name)
+        if platform.system() == 'Windows':
+            slash = '\\'
+        else:
+            slash = '/'
+        pixmap = QPixmap(self.location + slash + self.name)
         self.enlarge = not self.enlarge
         if self.enlarge:
             s_pixmap = pixmap.scaled(500, 500, Qt.KeepAspectRatio, Qt.FastTransformation)
@@ -146,7 +146,7 @@ class ImageButton(QtWidgets.QLabel):
 
     def mouseDoubleClickEvent(self, event):
         self.p = QProcess()
-        self.p.start('/Applications/GIMP-2.10.app', [self.location + '/' + self.name])
+        self.p.start(application, [self.location + '/' + self.name])
 
     def mouseMoveEvent(self, event):
         global Mouse_X
@@ -186,15 +186,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.clear.resize(150, self.clear.height())
         self.clear.move(self.button.width(), 0)
         self.clear.clicked.connect(self.clear_click)
-
-        # self.words = []
-
-        # for word in text.split():
-        #    label = Bubble(word)
-        #    label.setFont(QtGui.QFont('SblHebrew', 18))
-        #    label.setFixedWidth(label.sizeHint().width())
-        #    self.words.append(label)
-        #    layout.addWidget(label)
 
         self.mainArea.setWidget(widget)
         self.setCentralWidget(self.mainArea)
