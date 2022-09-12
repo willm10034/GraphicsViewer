@@ -113,6 +113,18 @@ class FlowLayout(QtWidgets.QLayout):
         else:
             return parent.spacing()
 
+class Bubble(QtWidgets.QLabel):
+    def __init__(self, text):
+        super(Bubble, self).__init__(text)
+        self.word = text
+        self.setContentsMargins(5, 5, 5, 5)
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        painter.drawRoundedRect(
+            0, 0, self.width() - 1, self.height() - 1, 5, 5)
+        super(Bubble, self).paintEvent(event)
 
 class ImageButton(QtWidgets.QLabel):
     def __init__(self, name, location):
@@ -130,6 +142,7 @@ class ImageButton(QtWidgets.QLabel):
         self.resize(100, 100)
         self.setMouseTracking(True)
         self.enlarge = False
+        self.setToolTip(name)
 
     def mousePressEvent(self, event):
         if platform.system() == 'Windows':
@@ -186,6 +199,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.clear.resize(150, self.clear.height())
         self.clear.move(self.button.width(), 0)
         self.clear.clicked.connect(self.clear_click)
+
+        # self.words = []
+
+        # for word in text.split():
+        #    label = Bubble(word)
+        #    label.setFont(QtGui.QFont('SblHebrew', 18))
+        #    label.setFixedWidth(label.sizeHint().width())
+        #    self.words.append(label)
+        #    layout.addWidget(label)
 
         self.mainArea.setWidget(widget)
         self.setCentralWidget(self.mainArea)
