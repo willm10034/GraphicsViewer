@@ -3,8 +3,10 @@ import os
 import platform
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSlot, Qt, QProcess
-from PyQt5.QtWidgets import QPushButton, QLabel, QFileDialog, QProgressDialog
+from PyQt5.QtWidgets import QPushButton, QLabel, QFileDialog, QProgressDialog, QLineEdit
 from PyQt5.QtGui import QPixmap
+from imageai.Detection import ObjectDetection
+import tensorflow
 
 # full path to image editor
 application = '/Applications/GIMP-2.10.app'
@@ -126,6 +128,7 @@ class Bubble(QtWidgets.QLabel):
             0, 0, self.width() - 1, self.height() - 1, 5, 5)
         super(Bubble, self).paintEvent(event)
 
+
 class ImageButton(QtWidgets.QLabel):
     def __init__(self, name, location):
         super().__init__()
@@ -142,7 +145,20 @@ class ImageButton(QtWidgets.QLabel):
         self.resize(100, 100)
         self.setMouseTracking(True)
         self.enlarge = False
-        self.setToolTip(name)
+
+        img_path = location + slash + name
+        obj_detect = ObjectDetection()
+        obj_detect.setModelTypeAsYOLOv3()
+        obj_detect.setModelPath("yolo.h5")
+        obj_detect.loadModel()
+        detected_obj = obj_detect.detectObjectsFromImage(input_image=img_path, output_image_path='out_' + img_path)
+        objects = ''
+        for obj in detected_obj:
+            if obj["name"] in objects:
+                pass
+            else:
+                objects += obj["name"] + ' '
+        self.setToolTip(objects)
 
     def mousePressEvent(self, event):
         if platform.system() == 'Windows':
@@ -200,23 +216,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self.clear.move(self.button.width(), 0)
         self.clear.clicked.connect(self.clear_click)
 
-        # self.words = []
+        self.label = QLabel(self)
+        self.label.setText('Search:')
+        self.label.move(self.clear.pos().x() + self.clear.width(), 0)
+        self.label.resize(50, 30)
 
-        # for word in text.split():
-        #    label = Bubble(word)
-        #    label.setFont(QtGui.QFont('SblHebrew', 18))
-        #    label.setFixedWidth(label.sizeHint().width())
-        #    self.words.append(label)
-        #    layout.addWidget(label)
+        self.search = QLineEdit(self)
+        self.search.move(self.label.pos().x() + self.label.width(), 0)
+        self.search.textChanged.connect(self.search_change)
 
         self.mainArea.setWidget(widget)
         self.setCentralWidget(self.mainArea)
+
+    @pyqtSlot()
+    def search_change(self):
+        items = (self.layout.itemAt(i) for i in range(self.layout.count()))
+        for item in items:
+            if self.search.text() in item.widget().toolTip():
+                item.widget().setVisible(True)
+            else:
+                item.widget().setVisible(False)
 
     @pyqtSlot()
     def clear_click(self):
         self.layout.removeWidget(self.mainArea)
         self.layout.removeWidget(self.button)
         self.layout.removeWidget(self.clear)
+        self.layout.removeWidget(self.label)
+        self.layout.removeWidget(self.search)
 
         self.mainArea.deleteLater()
         self.button.deleteLater()
@@ -249,6 +276,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.clear.clicked.connect(self.clear_click)
         self.clear.show()
 
+        self.label = QLabel(self)
+        self.label.setText('Search:')
+        self.label.resize(50, 30)
+        self.label.move(self.clear.pos().x() + self.clear.width(), 0)
+        self.label.show()
+
+        self.search = QLineEdit(self)
+        self.search.move(self.label.pos().x() + self.label.width(), 0)
+        self.search.textChanged.connect(self.search_change)
+        self.search.show()
         # self.setCentralWidget(self.mainArea)
 
         self.update()
